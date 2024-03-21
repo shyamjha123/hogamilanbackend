@@ -1,12 +1,12 @@
 const express = require("express");
 const fs = require("fs").promises;
 const bodyParser = require("body-parser");
-const cors = require("cors"); // Import the CORS middleware
+const cors = require("cors");
 
 const app = express();
 const PORT = 4500;
 
-app.use(cors()); // Enable CORS for all routes
+app.use(cors());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.json());
 
@@ -39,6 +39,34 @@ app.post("/api/data", async (req, res) => {
         res.json({ success: true, data: newData });
     } catch (error) {
         console.error("Error writing data:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+});
+
+// Create endpoint to update data using PUT method
+app.put("/api/data", async (req, res) => {
+    try {
+        const newData = req.body;
+        let data = [];
+        try {
+            const existingData = await fs.readFile(dataFilePath, "utf8");
+            data = JSON.parse(existingData);
+            // Find the index of the data to be updated
+            const dataIndex = data.findIndex(item => item.id === newData.id);
+            if (dataIndex !== -1) {
+                // Update the data at the found index
+                data[dataIndex] = newData;
+                await fs.writeFile(dataFilePath, JSON.stringify(data, null, 2));
+                res.json({ success: true, data: newData });
+            } else {
+                res.status(404).json({ error: "Data not found" });
+            }
+        } catch (error) {
+            console.error("Error updating data:", error);
+            res.status(500).json({ error: "Internal Server Error" });
+        }
+    } catch (error) {
+        console.error("Error updating data:", error);
         res.status(500).json({ error: "Internal Server Error" });
     }
 });
